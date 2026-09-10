@@ -1,0 +1,67 @@
+
+@baseUrl = http://localhost:3000
+
+### 
+GET {{baseUrl}}/lessons
+
+###
+GET {{baseUrl}}/lessons/1
+
+###
+GET {{baseUrl}}/lessons/999
+
+###
+POST {{baseUrl}}/lessons
+Content-Type: application/json
+
+{
+    "title": "Введение в базы данных",
+    "description": "Основы SQL и NoSQL, типы СУБД",
+    "videoUrl": "https://example.com/db-intro"
+}
+
+### 
+POST {{baseUrl}}/lessons
+Content-Type: application/json
+
+{
+    "title": "Неполный урок",
+    "description": "Здесь нет videoUrl"
+}
+
+###
+PUT {{baseUrl}}/lessons/1
+Content-Type: application/json
+
+{
+    "title": "Обновлённое введение в Node.js",
+    "description": "Углублённое изучение event loop и модулей",
+    "videoUrl": "https://example.com/nodejs-deep"
+}
+
+###
+PUT {{baseUrl}}/lessons/999
+Content-Type: application/json
+{
+    "title": "Несуществующий урок",
+    "description": "Этого урока нет в базе",
+    "videoUrl": "https://example.com/nonexistent"
+}
+
+###
+PUT {{baseUrl}}/lessons/1
+Content-Type: application/json
+
+{
+    "title": "Неполное обновление",
+    "description": "нет videoUrl"
+}
+
+###
+DELETE {{baseUrl}}/lessons/2
+
+###
+DELETE {{baseUrl}}/lessons/999
+
+###
+GET {{baseUrl}}/lessons
