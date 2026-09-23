@@ -1,0 +1,10 @@
+{
+  "development": {
+    "username": "postgres",
+    "password": "kilkasto17",
+    "database": "interactive_lessons_db",
+    "host": "127.0.0.1",
+    "port": 5432,
+    "dialect": "postgres"
+  }
+}
