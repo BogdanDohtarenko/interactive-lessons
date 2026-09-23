@@ -1,10 +1,13 @@
-﻿require('dotenv').config();
+require('dotenv').config();
 const express = require('express');
+const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const cookieParser = require('cookie-parser');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const { Op } = require('sequelize');
+
 const sequelize = require('./db');
 const User = require('./models/User');
 const Lesson = require('./models/Lesson');
@@ -13,6 +16,7 @@ const { validateRegister } = require('./middleware/validate');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
+app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
 app.use(helmet());
@@ -20,7 +24,6 @@ app.use(helmet());
 const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });
 app.use(limiter);
 
-// Регистрация с Joi-валидацией пароля
 app.post('/auth/register', validateRegister, async (req, res, next) => {
   try {
     const { email, password } = req.body;
@@ -30,15 +33,14 @@ app.post('/auth/register', validateRegister, async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-// Логин
 app.post('/auth/login', async (req, res, next) => {
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ where: { email } });
-    if (!user) return res.status(404).json({ message: 'Пользователь не найден' });
+    if (!user) return res.status(404).json({ message: 'User not found' });
 
     if (user.lockUntil && user.lockUntil > new Date()) {
-      return res.status(429).json({ message: 'Аккаунт временно заблокирован' });
+      return res.status(429).json({ message: 'Account is locked due to too many failed attempts' });
     }
 
     const isValid = await bcrypt.compare(password, user.passwordHash);
@@ -48,15 +50,15 @@ app.post('/auth/login', async (req, res, next) => {
         user.lockUntil = new Date(Date.now() + 15 * 60 * 1000);
       }
       await user.save();
-      return res.status(401).json({ message: 'Неверный пароль' });
+      return res.status(401).json({ message: 'Invalid password' });
     }
 
     user.failedAttempts = 0;
     user.lockUntil = null;
-    
+
     const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '15m' });
     const refreshToken = jwt.sign({ id: user.id }, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
-    
+
     user.refreshToken = refreshToken;
     await user.save();
 
@@ -70,16 +72,31 @@ app.get('/auth/me', authGuard, async (req, res) => {
   res.json(user);
 });
 
-// CRUD для сущности Lesson (Интерактивные уроки)
-// Публичный доступ к списку уроков
 app.get('/lessons', async (req, res, next) => {
   try {
-    const lessons = await Lesson.findAll();
+    const { search, minDuration } = req.query;
+    const where = {};
+
+    if (search) {
+      where.title = { [Op.iLike]: `%${search}%` };
+    }
+    if (minDuration) {
+      where.duration = { [Op.gte]: Number(minDuration) };
+    }
+
+    const lessons = await Lesson.findAll({ where });
     res.json(lessons);
   } catch (e) { next(e); }
 });
 
-// Создание урока (только moderator и admin)
+app.get('/lessons/:id', async (req, res, next) => {
+  try {
+    const lesson = await Lesson.findByPk(req.params.id);
+    if (!lesson) return res.status(404).json({ message: 'Lesson not found' });
+    res.json(lesson);
+  } catch (e) { next(e); }
+});
+
 app.post('/lessons', authGuard, roleGuard(['moderator', 'admin']), async (req, res, next) => {
   try {
     const lesson = await Lesson.create(req.body);
@@ -87,11 +104,21 @@ app.post('/lessons', authGuard, roleGuard(['moderator', 'admin']), async (req, r
   } catch (e) { next(e); }
 });
 
-// Удаление урока (только admin)
+app.put('/lessons/:id', authGuard, roleGuard(['moderator', 'admin']), async (req, res, next) => {
+  try {
+    const lesson = await Lesson.findByPk(req.params.id);
+    if (!lesson) return res.status(404).json({ message: 'Lesson not found' });
+    await lesson.update(req.body);
+    res.json(lesson);
+  } catch (e) { next(e); }
+});
+
 app.delete('/lessons/:id', authGuard, roleGuard(['admin']), async (req, res, next) => {
   try {
-    await Lesson.destroy({ where: { id: req.params.id } });
-    res.json({ message: 'Урок удален' });
+    const lesson = await Lesson.findByPk(req.params.id);
+    if (!lesson) return res.status(404).json({ message: 'Lesson not found' });
+    await lesson.destroy();
+    res.json({ message: 'Lesson deleted successfully' });
   } catch (e) { next(e); }
 });
 
@@ -100,7 +127,8 @@ app.use(errorHandler);
 const start = async () => {
   try {
     await sequelize.sync({ alter: true });
-    app.listen(process.env.PORT, () => console.log(API работает на порту ));
+    const port = process.env.PORT || 3000;
+    app.listen(port, () => console.log('API running on port ' + port));
   } catch (e) {
     console.error(e);
   }
