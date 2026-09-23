@@ -7,7 +7,9 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const sequelize = require('./db');
 const User = require('./models/User');
+const Lesson = require('./models/Lesson');
 const { authGuard, roleGuard } = require('./middleware/authMiddleware');
+const { validateRegister } = require('./middleware/validate');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -18,7 +20,8 @@ app.use(helmet());
 const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });
 app.use(limiter);
 
-app.post('/auth/register', async (req, res, next) => {
+// Регистрация с Joi-валидацией пароля
+app.post('/auth/register', validateRegister, async (req, res, next) => {
   try {
     const { email, password } = req.body;
     const passwordHash = await bcrypt.hash(password, 10);
@@ -27,6 +30,7 @@ app.post('/auth/register', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+// Логин
 app.post('/auth/login', async (req, res, next) => {
   try {
     const { email, password } = req.body;
@@ -66,10 +70,28 @@ app.get('/auth/me', authGuard, async (req, res) => {
   res.json(user);
 });
 
-app.delete('/users/:id', authGuard, roleGuard(['admin']), async (req, res, next) => {
+// CRUD для сущности Lesson (Интерактивные уроки)
+// Публичный доступ к списку уроков
+app.get('/lessons', async (req, res, next) => {
   try {
-    await User.destroy({ where: { id: req.params.id } });
-    res.json({ message: 'Удалено' });
+    const lessons = await Lesson.findAll();
+    res.json(lessons);
+  } catch (e) { next(e); }
+});
+
+// Создание урока (только moderator и admin)
+app.post('/lessons', authGuard, roleGuard(['moderator', 'admin']), async (req, res, next) => {
+  try {
+    const lesson = await Lesson.create(req.body);
+    res.status(201).json(lesson);
+  } catch (e) { next(e); }
+});
+
+// Удаление урока (только admin)
+app.delete('/lessons/:id', authGuard, roleGuard(['admin']), async (req, res, next) => {
+  try {
+    await Lesson.destroy({ where: { id: req.params.id } });
+    res.json({ message: 'Урок удален' });
   } catch (e) { next(e); }
 });
 
