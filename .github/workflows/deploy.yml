@@ -12,20 +12,20 @@ jobs:
 
     steps:
       - name: Чтение репозитория
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Установка Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
 
-      - name: Установка зависимостей Backend (Корень)
-        run: npm ci
+      - name: Установка зависимостей Backend
+        run: npm install
 
-      - name: Установка зависимостей Client (Frontend)
+      - name: Установка зависимостей Client
         run: |
           cd client
-          npm ci
+          npm install
 
       - name: Сборка Frontend (React)
         run: |
@@ -39,7 +39,7 @@ jobs:
           to: ${{ secrets.TELEGRAM_CHAT_ID }}
           token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           message: |
-            Сборка CI/CD завершена успешно!
+            ✅ Сборка CI/CD завершена успешно!
             Ветка: ${{ github.ref_name }}
             Коммит: ${{ github.event.head_commit.message }}
 
@@ -50,6 +50,6 @@ jobs:
           to: ${{ secrets.TELEGRAM_CHAT_ID }}
           token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           message: |
-            Ошибка сборки CI/CD!
+            ❌ Ошибка сборки CI/CD!
             Ветка: ${{ github.ref_name }}
             Коммит: ${{ github.event.head_commit.message }}
