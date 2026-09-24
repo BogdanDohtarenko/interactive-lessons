@@ -1,0 +1,55 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main", "ipr22" ]
+  pull_request:
+    branches: [ "main", "ipr22" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Чтение репозитория
+        uses: actions/checkout@v3
+
+      - name: Установка Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Установка зависимостей Backend (Корень)
+        run: npm ci
+
+      - name: Установка зависимостей Client (Frontend)
+        run: |
+          cd client
+          npm ci
+
+      - name: Сборка Frontend (React)
+        run: |
+          cd client
+          npm run build
+
+      - name: Отправка уведомления в Telegram об успехе сборки
+        if: success()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          message: |
+            Сборка CI/CD завершена успешно!
+            Ветка: ${{ github.ref_name }}
+            Коммит: ${{ github.event.head_commit.message }}
+
+      - name: Отправка уведомления в Telegram при ошибке
+        if: failure()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          message: |
+            Ошибка сборки CI/CD!
+            Ветка: ${{ github.ref_name }}
+            Коммит: ${{ github.event.head_commit.message }}
