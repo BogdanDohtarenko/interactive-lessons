@@ -1,4 +1,11 @@
 require('dotenv').config();
+const Sentry = require('@sentry/node');
+
+if (process.env.SENTRY_DSN) {
+  Sentry.init({ dsn: process.env.SENTRY_DSN });
+  console.log("Sentry успешно инициализирован.");
+}
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -31,6 +38,10 @@ app.post('/auth/register', validateRegister, async (req, res, next) => {
     const user = await User.create({ email, passwordHash });
     res.status(201).json({ id: user.id, email: user.email });
   } catch (e) { next(e); }
+});
+
+app.get("/debug-sentry", function mainHandler(req, res) {
+  throw new Error("My first Sentry error!");
 });
 
 app.post('/auth/login', async (req, res, next) => {
@@ -87,6 +98,26 @@ app.get('/lessons', async (req, res, next) => {
     const lessons = await Lesson.findAll({ where });
     res.json(lessons);
   } catch (e) { next(e); }
+});
+
+app.get('/health', async (req, res) => {
+  try {
+    // Проверяем соединение с базой данных
+    await sequelize.authenticate();
+    
+    res.status(200).json({
+      status: 'OK',
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString(),
+      database: 'connected'
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'ERROR',
+      database: 'disconnected',
+      error: error.message
+    });
+  }
 });
 
 app.get('/lessons/:id', async (req, res, next) => {

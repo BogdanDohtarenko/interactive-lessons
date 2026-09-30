@@ -1,10 +1,14 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom';
-import AuthPage from './pages/AuthPage';
-import LessonList from './pages/LessonList';
-import LessonForm from './pages/LessonForm';
-import LessonDetails from './pages/LessonDetails';
-import Home from './pages/Home';
+import './App.css';
+
+// Динамические импорты для разделения кода (Code Splitting)
+const Home = lazy(() => import('./pages/Home'));
+const AuthPage = lazy(() => import('./pages/AuthPage'));
+const LessonList = lazy(() => import('./pages/LessonList'));
+const LessonForm = lazy(() => import('./pages/LessonForm'));
+const LessonDetails = lazy(() => import('./pages/LessonDetails'));
 
 function ProtectedRoute({ user, allowedRoles, children }) {
   if (!user) {
@@ -73,28 +77,30 @@ export default function App() {
         </div>
       </nav>
 
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/lessons" element={<LessonList user={user} />} />
-        <Route 
-          path="/lessons/new" 
-          element={
-            <ProtectedRoute user={user} allowedRoles={['admin', 'moderator']}>
-              <LessonForm />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/lessons/:id/edit" 
-          element={
-            <ProtectedRoute user={user} allowedRoles={['admin', 'moderator']}>
-              <LessonForm />
-            </ProtectedRoute>
-          } 
-        />
-        <Route path="/lessons/:id" element={<LessonDetails user={user} />} />
-        <Route path="/auth" element={<AuthPage onLoginSuccess={fetchUser} />} />
-      </Routes>
+      <Suspense fallback={<div style={{ textAlign: 'center', padding: '20px' }}>Загрузка страницы...</div>}>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/lessons" element={<LessonList user={user} />} />
+          <Route 
+            path="/lessons/new" 
+            element={
+              <ProtectedRoute user={user} allowedRoles={['admin', 'moderator']}>
+                <LessonForm />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/lessons/:id/edit" 
+            element={
+              <ProtectedRoute user={user} allowedRoles={['admin', 'moderator']}>
+                <LessonForm />
+              </ProtectedRoute>
+            } 
+          />
+          <Route path="/lessons/:id" element={<LessonDetails user={user} />} />
+          <Route path="/auth" element={<AuthPage onLoginSuccess={fetchUser} />} />
+        </Routes>
+      </Suspense>
     </div>
   );
 }

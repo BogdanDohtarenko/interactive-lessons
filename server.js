@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+require('dotenv').config();
 const Sentry = require('@sentry/node');
 const { sequelize } = require('./models');
 const lessonRoutes = require('./routes/lessonRoutes');
@@ -7,10 +8,17 @@ const lessonRoutes = require('./routes/lessonRoutes');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Инициализация Sentry (при наличии DSN)
-if (process.env.SENTRY_DSN) {
-  Sentry.init({ dsn: process.env.SENTRY_DSN });
-}
+const { Logtail } = require("@logtail/node");
+const logtail = new Logtail("3PaGQJf7kB9BJ4J2nEQxHbAX", {
+  endpoint: "https://s2778457.us-west-2a.betterstackdata.com"
+});
+
+// Middleware для логирования
+app.use(async (req, res, next) => {
+  logtail.info(`[Backend Log] ${req.method} ${req.url}`);
+  await logtail.flush();
+  next();
+});
 
 app.use(cors());
 app.use(express.json());
@@ -24,12 +32,11 @@ app.use((req, res, next) => {
   next();
 });
 
-// Эндпоинт проверки доступности (для UptimeRobot)
+// Маршруты (Routes)
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'OK', uptime: process.uptime(), timestamp: new Date() });
 });
 
-// Дашборд метрик (время работы, память, количество запросов)
 app.get('/metrics', (req, res) => {
   const memoryUsage = process.memoryUsage();
   res.json({
@@ -44,27 +51,35 @@ app.get('/metrics', (req, res) => {
   });
 });
 
-// Искусственная ошибка для проверки Sentry
+// Эндпоинты проверки Sentry
+app.get("/debug-sentry", function mainHandler(req, res) {
+  throw new Error("My first Sentry error!");
+});
+
 app.get('/debug-error', (req, res) => {
   throw new Error('Тестовая ошибка бэкенда для Sentry');
 });
 
-// Основные маршруты
 app.use('/lessons', lessonRoutes);
 
-// Обработка несуществующих маршрутов (404)
+// Обработка 404
 app.use((req, res) => {
   res.status(404).json({ message: 'Маршрут не найден' });
 });
 
-// Логирование ошибок в Sentry
+// Обработчики ошибок Sentry
 if (process.env.SENTRY_DSN) {
   Sentry.setupExpressErrorHandler(app);
 }
 
-// Глобальный обработчик ошибок
-app.use((err, req, res, next) => {
-  console.error(err.stack);
+app.use(async (err, req, res, next) => {
+  console.error("Перехвачена ошибка:", err.stack);
+  
+  if (process.env.SENTRY_DSN) {
+    Sentry.captureException(err);
+    await Sentry.flush(2000);
+  }
+
   res.status(500).json({ error: err.message || 'Внутренняя ошибка сервера' });
 });
 
