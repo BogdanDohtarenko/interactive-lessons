@@ -8,7 +8,7 @@ export default function LessonDetails({ user }) {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    fetch(`http://localhost:3000/lessons/${id}`)
+    fetch(`http://interactive-lessons-kappa.vercel.app/lessons/${id}`)
       .then((res) => {
         if (!res.ok) throw new Error('Урок не найден');
         return res.json();
@@ -21,7 +21,7 @@ export default function LessonDetails({ user }) {
     if (!window.confirm('Вы действительно хотите удалить этот урок?')) return;
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`http://localhost:3000/lessons/${id}`, {
+      const res = await fetch(`http://interactive-lessons-kappa.vercel.app/lessons/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
