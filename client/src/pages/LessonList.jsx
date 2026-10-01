@@ -1,15 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
+const API_URL = import.meta.env.VITE_API_URL || 'https://interactive-lessons-kappa.vercel.app';
+
 export default function LessonList({ user }) {
   const [lessons, setLessons] = useState([]);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [minDuration, setMinDuration] = useState('');
+
+  // 1. Debounce: обновляем debouncedSearch через 500 мс после окончания ввода
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [search]);
 
   const fetchLessons = async () => {
     try {
       const queryParams = new URLSearchParams();
-      if (search) queryParams.append('search', search);
+      if (debouncedSearch) queryParams.append('search', debouncedSearch);
       if (minDuration) queryParams.append('minDuration', minDuration);
 
       const res = await fetch(`https://interactive-lessons-kappa.vercel.app/lessons?${queryParams.toString()}`);
@@ -24,8 +36,8 @@ export default function LessonList({ user }) {
 
   useEffect(() => {
     fetchLessons();
-  }, [search, minDuration]);
-
+  }, [debouncedSearch, minDuration]);
+  
   const handleDelete = async (id) => {
     if (!window.confirm('Вы действительно хотите удалить этот урок?')) return;
 
