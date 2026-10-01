@@ -31,7 +31,7 @@ export default function App() {
       return;
     }
     try {
-      const res = await fetch('http://interactive-lessons-kappa.vercel.app/auth/me', {
+      const res = await fetch('https://interactive-lessons-kappa.vercel.app/auth/me', {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {

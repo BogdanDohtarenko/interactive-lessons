@@ -1,7 +1,7 @@
+
+
 const express = require('express');
 const cors = require('cors');
-require('dotenv').config();
-const Sentry = require('@sentry/node');
 const { sequelize } = require('./models');
 const lessonRoutes = require('./routes/lessonRoutes');
 
@@ -32,7 +32,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// Маршруты (Routes)
+// 1. Маршруты (Routes)
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'OK', uptime: process.uptime(), timestamp: new Date() });
 });
@@ -62,12 +62,12 @@ app.get('/debug-error', (req, res) => {
 
 app.use('/lessons', lessonRoutes);
 
-// Обработка 404
+// 2. Обработка несуществующих маршрутов (404)
 app.use((req, res) => {
   res.status(404).json({ message: 'Маршрут не найден' });
 });
 
-// Обработчики ошибок Sentry
+// 3. Обработка ошибок Sentry и глобальный обработчик
 if (process.env.SENTRY_DSN) {
   Sentry.setupExpressErrorHandler(app);
 }
@@ -77,7 +77,7 @@ app.use(async (err, req, res, next) => {
   
   if (process.env.SENTRY_DSN) {
     Sentry.captureException(err);
-    await Sentry.flush(2000);
+    await Sentry.flush(2000); // Ожидаем отправки пакета по сети
   }
 
   res.status(500).json({ error: err.message || 'Внутренняя ошибка сервера' });
@@ -88,7 +88,7 @@ async function startServer() {
     await sequelize.authenticate();
     console.log('Подключение к базе данных PostgreSQL прошло успешно.');
     app.listen(PORT, () => {
-      console.log(`Сервер запущен на http://localhost:${PORT}`);
+      console.log(`Сервер запущен на https://localhost:${PORT}`);
     });
   } catch (error) {
     console.error('Ошибка подключения к базе данных:', error);

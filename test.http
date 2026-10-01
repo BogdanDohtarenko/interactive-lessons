@@ -1,5 +1,5 @@
 
-@baseUrl = http://interactive-lessons-kappa.vercel.app
+@baseUrl = https://interactive-lessons-kappa.vercel.app
 
 ### 
 GET {{baseUrl}}/lessons

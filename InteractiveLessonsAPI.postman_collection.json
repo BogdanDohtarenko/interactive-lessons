@@ -211,7 +211,7 @@
   "variable": [
     {
       "key": "baseUrl",
-      "value": "http://interactive-lessons-kappa.vercel.app/"
+      "value": "https://interactive-lessons-kappa.vercel.app/"
     },
     {
       "key": "token",

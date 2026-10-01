@@ -18,7 +18,7 @@ export default function LessonForm() {
 
   useEffect(() => {
     if (isEdit) {
-      fetch(`http://interactive-lessons-kappa.vercel.app/lessons/${id}`)
+      fetch(`https://interactive-lessons-kappa.vercel.app/lessons/${id}`)
         .then((res) => res.json())
         .then((data) => {
           setFormData({
@@ -44,8 +44,8 @@ export default function LessonForm() {
 
     const token = localStorage.getItem('token');
     const url = isEdit
-      ? `http://interactive-lessons-kappa.vercel.app/lessons/${id}`
-      : 'http://interactive-lessons-kappa.vercel.app/lessons';
+      ? `https://interactive-lessons-kappa.vercel.app/lessons/${id}`
+      : 'https://interactive-lessons-kappa.vercel.app/lessons';
     const method = isEdit ? 'PUT' : 'POST';
 
     try {

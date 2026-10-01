@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: "http://interactive-lessons-kappa.vercel.app/"
+  baseURL: "https://interactive-lessons-kappa.vercel.app/"
 });
 
 api.interceptors.request.use((config) => {

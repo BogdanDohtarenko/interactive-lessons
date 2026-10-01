@@ -12,7 +12,7 @@ export default function LessonList({ user }) {
       if (search) queryParams.append('search', search);
       if (minDuration) queryParams.append('minDuration', minDuration);
 
-      const res = await fetch(`http://interactive-lessons-kappa.vercel.app/lessons?${queryParams.toString()}`);
+      const res = await fetch(`https://interactive-lessons-kappa.vercel.app/lessons?${queryParams.toString()}`);
       if (res.ok) {
         const data = await res.json();
         setLessons(data);
@@ -31,7 +31,7 @@ export default function LessonList({ user }) {
 
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`http://interactive-lessons-kappa.vercel.app/lessons/${id}`, {
+      const res = await fetch(`https://interactive-lessons-kappa.vercel.app/lessons/${id}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,
